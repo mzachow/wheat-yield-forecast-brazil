@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 from itertools import groupby
 from copy import copy, deepcopy
 from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error as mse
-from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.feature_selection import SelectKBest, f_regression, VarianceThreshold
 from bias_correction import BiasCorrection
 from IPython.core.interactiveshell import InteractiveShell
@@ -256,36 +257,15 @@ def create_climatology_features(features, climate):
 
 
 # Yiel Data
-
-def read_and_detrend_yield_by_group():
-    df = pd.read_csv("Data/Yield/yield_by_group.csv")
-    li = []
-    for group in [1, 2, 3, 4]:
-        cv_yield = df.loc[(df["zone"] == group) & (df["year"].isin(list(range(1993,2017))))].copy().reset_index(drop=True)
-        reg = LinearRegression()
-        slope_cv = reg.fit(cv_yield["year"].values.reshape(-1,1), cv_yield["yield"]).coef_[0]
-        
-        cv_yield["yield_detrended"] = cv_yield["yield"] + (slope_cv * (2016 - cv_yield["year"]))
-        li.append(cv_yield)
-
-    df_cv = (pd
-             .concat(li, axis=0, ignore_index=False)
-             .sort_values(by=["zone", "year"])
-             .reset_index(drop=True)
-             .drop(["yield"], axis=1)
-             .rename(columns={"yield_detrended":"yield"}))
-        
-    return df_cv
-
-def national_yield(group_yield):
-    harvested_area = pd.read_csv("Data/Yield/harvested_area_by_group2.csv")
-    ha_yield_group = harvested_area.merge(group_yield, on=["year", "zone"])
-    ha_yield_group["relative_yield"] = ha_yield_group["relative_harvested_area"] * ha_yield_group["yield"]
-    yield_brazil = ha_yield_group.groupby(["year"])["relative_yield"].sum().reset_index().rename(columns={"relative_yield":"yield"})
-    ha_yield_group = ha_yield_group[["year", "zone", "rolling_avg"]].pivot(columns="zone", index="year")
-    ha_yield_group.columns = [1, 2, 3, 4]
-    year_group_to_contribution = ha_yield_group.to_dict()
-    return (yield_brazil, year_group_to_contribution)
+def get_yield_and_ha_data():
+    national_yield = pd.read_csv("Data/Wheat/national_yield_detrended.csv")
+    group_yield = pd.read_csv("Data/Wheat/yield_by_group_detrended.csv")
+    ha_by_group = pd.read_csv("Data/Wheat/harvested_area_estimates_by_group.csv")
+    ha_by_group = ha_by_group[["year", "zone", "area"]].pivot(columns="zone", index="year")
+    ha_by_group.columns = [1, 2, 3, 4]
+    year_group_to_contribution = ha_by_group.to_dict()
+    
+    return (national_yield, group_yield, year_group_to_contribution)
 
 # K-Fold Cross Validation
 
@@ -317,13 +297,13 @@ def kfold_cross_validation(data, national_yield, contributions_to_national_yield
             y_train = cv_dataset.loc[(cv_dataset["model"] == "WS")
                                       & (cv_dataset["zone"] == group)
                                        & (cv_dataset["year"] != season), "yield"]
-            
+
             # To overcome variance threshold
             if model == "CLIMATE": X_train += np.random.normal(0, 1e-6, X_train.shape) 
             
             pipeline = Pipeline([('scaler', StandardScaler()), 
                                  ('var', VarianceThreshold()), 
-                                 ('selector', SelectKBest(f_regression, k=5)), 
+                                 ('selector', SelectKBest(f_regression, k=5)),
                                  ('estimator', Ridge())])
             reg = pipeline.fit(X_train, y_train)  
 
