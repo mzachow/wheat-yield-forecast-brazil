@@ -14,7 +14,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.feature_selection import SelectKBest, f_regression, VarianceThreshold
+from sklearn.feature_selection import SelectKBest, f_regression, VarianceThreshold, SequentialFeatureSelector
 from bias_correction import BiasCorrection
 from IPython.core.interactiveshell import InteractiveShell
 
@@ -131,8 +131,8 @@ def adjust_mean_temperature_bias(observed, predicted, correction_method="normal_
             if season != current_season:
                 observation_to_be_added = (current_zone, season, current_month) 
                 observations_used_as_reference.append(grouped_climate_observations.get_group(observation_to_be_added))   
-                hindcast_to_be_added = (current_model, current_init_month, current_zone, season, current_month)
-                hindcasts_used_as_reference.append(grouped_climate_hindcasts_reference.get_group(hindcast_to_be_added))
+            hindcast_to_be_added = (current_model, current_init_month, current_zone, season, current_month)
+            hindcasts_used_as_reference.append(grouped_climate_hindcasts_reference.get_group(hindcast_to_be_added))
         hindcasts_used_as_reference = pd.concat(hindcasts_used_as_reference, axis=0, ignore_index=False)
         observations_used_as_reference = pd.concat(observations_used_as_reference, axis=0, ignore_index=False) 
         
@@ -291,10 +291,10 @@ def kfold_cross_validation(data, national_yield, contributions_to_national_yield
     
     for season in crop_seasons:
         for group in list(range(1,5)):
-            X_train = cv_dataset.loc[(cv_dataset["model"] == "WS")
+            X_train = cv_dataset.loc[(cv_dataset["model"] == "WS") 
                                       & (cv_dataset["zone"] == group)
                                        & (cv_dataset["year"] != season), relevant_columns]
-            y_train = cv_dataset.loc[(cv_dataset["model"] == "WS")
+            y_train = cv_dataset.loc[(cv_dataset["model"] == "WS") 
                                       & (cv_dataset["zone"] == group)
                                        & (cv_dataset["year"] != season), "yield"]
 
@@ -303,7 +303,7 @@ def kfold_cross_validation(data, national_yield, contributions_to_national_yield
             
             pipeline = Pipeline([('scaler', StandardScaler()), 
                                  ('var', VarianceThreshold()), 
-                                 ('selector', SelectKBest(f_regression, k=5)),
+                                 ('selector', SelectKBest(f_regression, k=4)),
                                  ('estimator', Ridge())])
             reg = pipeline.fit(X_train, y_train)  
 
