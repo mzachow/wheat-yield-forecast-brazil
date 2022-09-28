@@ -268,52 +268,47 @@ def get_yield_and_ha_data():
     return (national_yield, group_yield, year_group_to_contribution)
 
 # K-Fold Cross Validation
-
-def kfold_cross_validation(data, national_yield, contributions_to_national_yield, model="ECMWF", init=8):
+def kfold_cross_validation(data, model="ECMWF", init=8, no_of_features=9):
     """
-    Returns scores on LOO-CV.
+    Returns predictions on LOO-CV.
         Params:
             data, dataframe: all features and targets by group and year for all models
-            national_yield, dataframe: national trend-corrected yield from 1993-2016
+            group, int: group to perform forecasts on
             model, string: model that is evaluated
             init, int: init_month that is evaluated
         Returns:
             result, dataframe: national yield forecasts by year
     """
     # Filter by model and init_month but also include observations that are used for model training
-    cv_dataset = (data.loc[(data["model"].isin([model, "WS"])) 
-                           & (data["init_month"].isin([init, 11]))])
+    cv_dataset = (data.loc[((data["model"] == model) & (data["init_month"] == init))
+                               | ((data["model"] == "WS") & (data["init_month"] == 11))])
+   
     # Dataframe where interim results are saved
     national_forecasts_by_year = (pd.DataFrame(data={"year":crop_seasons, "predicted":np.zeros(24)})
-                                  .merge(national_yield, on="year", how="left"))
+                                  .merge(cv_dataset.loc[(cv_dataset["model"] == "WS"), 
+                                                        ["year", "yield"]], on="year", how="left"))
     # Features
-    relevant_columns = [c for c in cv_dataset.columns if c not in ["model", "init_month", "zone", "year", "yield"]]
+    relevant_columns = [c for c in cv_dataset.columns if c not in ["model", "init_month", "year", "yield"]]
     
     for season in crop_seasons:
-        for group in list(range(1,5)):
-            X_train = cv_dataset.loc[(cv_dataset["model"] == "WS") 
-                                      & (cv_dataset["zone"] == group)
-                                       & (cv_dataset["year"] != season), relevant_columns]
-            y_train = cv_dataset.loc[(cv_dataset["model"] == "WS") 
-                                      & (cv_dataset["zone"] == group)
-                                       & (cv_dataset["year"] != season), "yield"]
-
-            # To overcome variance threshold
-            if model == "CLIMATE": X_train += np.random.normal(0, 1e-6, X_train.shape) 
+        X_train = cv_dataset.loc[(cv_dataset["model"] == "WS") 
+                                 & (cv_dataset["year"] != season), relevant_columns].reset_index(drop=True)
+        y_train = cv_dataset.loc[(cv_dataset["model"] == "WS") 
+                                 & (cv_dataset["year"] != season), "yield"].reset_index(drop=True)
             
-            pipeline = Pipeline([('scaler', StandardScaler()), 
-                                 ('var', VarianceThreshold()), 
-                                 ('selector', SelectKBest(f_regression, k=4)),
-                                 ('estimator', Ridge())])
-            reg = pipeline.fit(X_train, y_train)  
+        pipeline = Pipeline([('scaler', StandardScaler()), 
+                             ('var', VarianceThreshold()), 
+                             ('selector', SelectKBest(f_regression, k=no_of_features)),
+                             ('estimator', Ridge())])
+        
+        reg = pipeline.fit(X_train, y_train)  
 
-            X_val = cv_dataset.loc[(cv_dataset["model"] == model)
-                                    & (cv_dataset["zone"] == group)
-                                     & (cv_dataset["year"] == season), relevant_columns].reset_index(drop=True)
+        X_val = cv_dataset.loc[(cv_dataset["model"] == model)
+                               & (cv_dataset["year"] == season), relevant_columns].reset_index(drop=True)
                 
-            y_predicted = reg.predict(X_val)[0]
+        y_predicted = reg.predict(X_val)[0]
             
-            # each forecast is weighted by the group's relative contribution to national harvested area
-            national_forecasts_by_year.loc[national_forecasts_by_year["year"] == season, "predicted"] += y_predicted * contributions_to_national_yield[group][season]
+        # each forecast is weighted by the group's relative contribution to national harvested area
+        national_forecasts_by_year.loc[national_forecasts_by_year["year"] == season, "predicted"] = y_predicted
     
     return national_forecasts_by_year
