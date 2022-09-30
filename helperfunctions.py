@@ -257,18 +257,12 @@ def create_climatology_features(features, climate):
 
 
 # Yiel Data
-def get_yield_and_ha_data():
-    national_yield = pd.read_csv("Data/Wheat/national_yield_detrended.csv")
-    group_yield = pd.read_csv("Data/Wheat/yield_by_group_detrended.csv")
-    ha_by_group = pd.read_csv("Data/Wheat/harvested_area_estimates_by_group.csv")
-    ha_by_group = ha_by_group[["year", "zone", "area"]].pivot(columns="zone", index="year")
-    ha_by_group.columns = [1, 2, 3, 4]
-    year_group_to_contribution = ha_by_group.to_dict()
-    
-    return (national_yield, group_yield, year_group_to_contribution)
+def read_national_wheat_yield():
+    national_yield = pd.read_csv("Data/Wheat/ibge_national_yield_detrended.csv")
+    return national_yield
 
 # K-Fold Cross Validation
-def kfold_cross_validation(data, model="ECMWF", init=8, no_of_features=9):
+def kfold_cross_validation(data, model="ECMWF", init=8, no_of_features=8):
     """
     Returns predictions on LOO-CV.
         Params:
