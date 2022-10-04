@@ -1,22 +1,13 @@
 """Libraries"""
 import glob
-import random
-import warnings
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import helperfunctions as hf
-import matplotlib.pyplot as plt
-from itertools import groupby
-from copy import copy, deepcopy
+from copy import copy
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error as mse
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.feature_selection import SelectKBest, f_regression, VarianceThreshold, SequentialFeatureSelector
+from sklearn.linear_model import Ridge
+from sklearn.feature_selection import SelectKBest, f_regression, VarianceThreshold
 from bias_correction import BiasCorrection
-from IPython.core.interactiveshell import InteractiveShell
 
 """Variables"""
 crop_seasons = list(range(1993,2017))
@@ -78,7 +69,9 @@ def read_observed_weather():
                         year=lambda x: x["date"].dt.year, 
                         month=lambda x: x["date"].dt.month)
                    )
-    observations = observations.loc[(observations["month"].isin(months_of_crop_season))].reset_index(drop=True)
+    observations = (observations
+                    .loc[(observations["month"].isin(months_of_crop_season))
+                         & (observations["year"].isin(crop_seasons))].reset_index(drop=True))
     
     observations["zone"] = observations["treatment"].apply(lambda x: weather_station_to_group_id[x])
     observations = (observations
@@ -94,19 +87,26 @@ def read_observed_weather():
     return observations
 
 def create_climatology_data(observed):
-    climatology = (observed
-                 .loc[("WS", 11, [1, 2, 3, 4], list(range(1961,1993)), months_of_crop_season)]
-                 .groupby(["zone", "year", "month"])
-                 .agg({"tmean":"mean", "tmax":"mean", "tmin":"mean", "rain":"sum"})
-                 .reset_index()
-                 .groupby(["zone", "month"])
-                 .agg({"tmean":"mean", "tmax":"mean", "tmin":"mean", "rain":"mean"})
-                 .reset_index()
-                 .copy())
+    observed = observed.copy()
+    li = []
+    for year in crop_seasons:
+        years_for_climatology = [y for y in crop_seasons if y != year]
+        climatology = (observed
+                       .loc[("WS", 11, [1, 2, 3, 4], years_for_climatology, months_of_crop_season)]
+                       .groupby(["zone", "year", "month"])
+                       .agg({"tmean":"mean", "tmax":"mean", "tmin":"mean", "rain":"sum"})
+                       .reset_index()
+                       .groupby(["zone", "month"])
+                       .agg({"tmean":"mean", "tmax":"mean", "tmin":"mean", "rain":"mean"})
+                       .reset_index()
+                       .assign(year=year)
+                       .copy())
+        climatology.insert(1, 'year', climatology.pop('year'))
+        li.append(climatology)
+    climatology = pd.concat(li, axis=0, ignore_index=False)
     return climatology
 
 # Bias Adjustment
-
 def adjust_mean_temperature_bias(observed, predicted, correction_method="normal_mapping"):
     """Return bias-adjusted hindcasts as Dataframe."""
     
@@ -221,19 +221,17 @@ def create_climatology_features(features, climate):
     climate = climate.copy()
     features = features.loc[features["model"] == "WS"].reset_index(drop=True).copy()
     month_conversion = {8:"Aug", 9:"Sep", 10:"Oct"} 
-    climate.columns = ["zone", "month", "Tmean", "Tmax", "Tmin", "Rain"]
+    climate.columns = ["zone", "year", "month", "Tmean", "Tmax", "Tmin", "Rain"]
     climate["month"] = climate["month"].replace(month_conversion) 
     climate["model"] = "CLIMATE"
     climate = (climate
                .reset_index(drop=True)
-               .pivot(index=["model", "zone"], columns="month"))
+               .pivot(index=["model", "year", "zone"], columns="month"))
     climate.columns = [str(s[0]) + "_" + str(s[1]) for s in climate.columns]
     climate = climate.reset_index()
     climate = pd.concat([climate]*8)
-    init_months = np.repeat([4, 5, 6, 7, 8, 9, 10, 11], 4)
+    init_months = np.repeat([4, 5, 6, 7, 8, 9, 10, 11], 4*24)
     climate["init_month"] = init_months
-    climate = pd.concat([climate]*24).reset_index(drop=True)
-    climate["year"] = np.repeat(list(range(1993,2017)), 32)
     climate = climate.set_index(["model", "init_month", "zone", "year"]).sort_index().reset_index()
     li = []
     for im in list(range(4,12)):
