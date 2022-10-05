@@ -33,12 +33,12 @@ def read_raw_model_data():
                             .agg({"tmean":"mean", "tmax":"mean", "tmin":"mean", "rain":"mean"})
                             .reset_index(drop=False))
 
-    multi_model_ensemble = (df
+    multi_model_ensemble = (ensemble_aggregation
                             .groupby(["init_month", "group", "year", "month", "date"])
                             .agg({"tmean":"mean", "tmax":"mean", "tmin":"mean", "rain":"mean"})
                             .reset_index(drop=False)
                             .assign(model="MME")
-                            .loc[:,ensemble_aggregation.columns])
+                            .loc[:, ensemble_aggregation.columns])
 
     hindcasts = (pd.concat([ensemble_aggregation, multi_model_ensemble])
                  .rename(columns={"date":"time", "group":"zone"})
