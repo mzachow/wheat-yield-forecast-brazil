@@ -11,7 +11,7 @@ from bias_correction import BiasCorrection
 
 """Variables"""
 crop_seasons = list(range(1993,2017))
-months_of_crop_season = list(range(8,11))
+months_of_crop_season = list(range(4,11))
 homogeneous_groups = list(range(1,5))
 
 
@@ -26,7 +26,7 @@ def read_raw_model_data():
     
     df = pd.concat([ukmo, ncep, ecmwf])
     df = df.sort_values(by=["model", "init_month", "ensemble", "group", "year", "month", "date"])
-    df = df.loc[(df["init_month"] >= 4) & (df["month"] >= 8)].reset_index(drop=True)
+    df = df.loc[(df["init_month"] >= 4) & (df["month"] >= 4)].reset_index(drop=True)
     
     ensemble_aggregation = (df
                             .groupby(["model", "init_month", "group", "year", "month", "date"])
@@ -107,7 +107,7 @@ def create_climatology_data(observed):
     return climatology
 
 # Bias Adjustment
-def adjust_mean_temperature_bias(observed, predicted, correction_method="normal_mapping"):
+def adjust_temperature_bias(observed, predicted, correction_method="normal_mapping"):
     """Return bias-adjusted hindcasts as Dataframe."""
     
     # GroupBy objects allow faster access to relevant subsets of climate data.
@@ -195,7 +195,7 @@ def fill_missing_dates_with_observations(observations, model):
 def aggregate_data(model):
     """Compute monthly climate indices."""
     
-    month_conversion = {8:"Aug", 9:"Sep", 10:"Oct"} 
+    month_conversion = {4:"Apr", 5:"May", 6:"June", 7:"July", 8:"Aug", 9:"Sep", 10:"Oct"} 
     climate_data_grouped = model.groupby(["model", "init_month", "zone", "year", "month"])
     
     li = []
@@ -220,7 +220,7 @@ def aggregate_data(model):
 def create_climatology_features(features, climate):
     climate = climate.copy()
     features = features.loc[features["model"] == "WS"].reset_index(drop=True).copy()
-    month_conversion = {8:"Aug", 9:"Sep", 10:"Oct"} 
+    month_conversion = {4:"Apr", 5:"May", 6:"June", 7:"July", 8:"Aug", 9:"Sep", 10:"Oct"} 
     climate.columns = ["zone", "year", "month", "Tmean", "Tmax", "Tmin", "Rain"]
     climate["month"] = climate["month"].replace(month_conversion) 
     climate["model"] = "CLIMATE"
@@ -236,16 +236,32 @@ def create_climatology_features(features, climate):
     li = []
     for im in list(range(4,12)):
         temp = climate.loc[climate["init_month"] == im].copy()
-        if im <= 8:
+        if im == 4:
+            li.append(temp)
+        if im == 5:
+            temp.loc[:, [c for c in temp.columns if ("Apr" in c)]] = np.nan
+            li.append(temp)
+        if im == 6:
+            temp.loc[:, [c for c in temp.columns if ("May" in c) | ("Apr" in c)]] = np.nan
+            li.append(temp)
+        if im == 7:
+            temp.loc[:, [c for c in temp.columns if ("June" in c) | ("May" in c) | ("Apr" in c)]] = np.nan
+            li.append(temp)
+        if im == 8:
+            temp.loc[:, [c for c in temp.columns if ("July" in c) | ("June" in c) 
+                         | ("May" in c) | ("Apr" in c)]] = np.nan
             li.append(temp)
         if im == 9:
-            temp.loc[:, [c for c in temp.columns if ("Aug" in c)]] = np.nan
+            temp.loc[:, [c for c in temp.columns if ("Aug" in c) | ("July" in c)
+                         | ("June" in c) | ("May" in c) | ("Apr" in c)]] = np.nan
             li.append(temp)
         if im == 10:
-            temp.loc[:, [c for c in temp.columns if ("Sep" in c) | ("Aug" in c)]] = np.nan
+            temp.loc[:, [c for c in temp.columns if ("Sep" in c) | ("Aug" in c) | ("July" in c)
+                         | ("June" in c) | ("May" in c) | ("Apr" in c)]] = np.nan
             li.append(temp)
         if im == 11:
-            temp.loc[:, [c for c in temp.columns if ("Oct" in c) | ("Sep" in c) | ("Aug" in c)]] = np.nan
+            temp.loc[:, [c for c in temp.columns if ("Oct" in c) | ("Sep" in c) | ("Aug" in c) | ("July" in c)
+                         | ("June" in c) | ("May" in c) | ("Apr" in c)]] = np.nan
             li.append(temp)
     climate = pd.concat(li, axis=0).set_index(["zone", "year"])
     features = features.set_index(["zone", "year"])
@@ -254,7 +270,7 @@ def create_climatology_features(features, climate):
     return climate
 
 
-# Yiel Data
+# Yield Data
 def read_national_wheat_yield():
     national_yield = pd.read_csv("Data/Wheat/ibge_national_yield_detrended.csv")
     return national_yield
