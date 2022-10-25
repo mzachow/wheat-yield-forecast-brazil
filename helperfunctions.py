@@ -36,7 +36,6 @@ coeffs = [vars_group1, vars_group2, vars_group3, vars_group4]
 contributions_to_national_yield = {1:0.37, 2:0.23, 3:0.23, 4:0.18}
 
 # Read Data
-
 def read_raw_model_data():
     """Reads and returns raw hindcasts from ECMWF, UKMO, NCEP and MME as one dataframe."""
     
