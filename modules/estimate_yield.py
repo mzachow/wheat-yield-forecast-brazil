@@ -167,3 +167,41 @@ def kfold_cross_validation(data, model="ECMWF", init=8, no_of_features=8):
         national_forecasts_by_year.loc[national_forecasts_by_year["year"] == season, "predicted"] = y_predicted
     
     return national_forecasts_by_year
+
+
+def return_features(data, no_of_features=8):
+    """Return selected features.
+    
+    params:
+     - data: all features and yield on national level for all years
+     - no_of_features: the number of most correlated features with the target to be selected
+     
+    returns:
+     - set of all features that were selected over all years
+    """
+    # Filter by model and init_month but also include observations that are used for model training
+    cv_dataset = (data.loc[((data["model"] == "WS") & (data["init_month"] == 11))])
+   
+    # Dataframe where selected features are saved
+    selected_features = pd.DataFrame(data={"year":crop_seasons})
+    selected_features["features"] = np.empty((len(selected_features), 0)).tolist()
+    selected_features = selected_features.set_index("year")
+    
+    # Features
+    relevant_columns = [c for c in cv_dataset.columns if c not in ["model", "init_month", "year", "yield"]]
+    
+    for season in crop_seasons:
+        X_train = cv_dataset.loc[(cv_dataset["year"] != season), relevant_columns].reset_index(drop=True)
+        y_train = cv_dataset.loc[(cv_dataset["year"] != season), "yield"].reset_index(drop=True)
+            
+        pipeline = Pipeline([('scaler', StandardScaler()), 
+                             ('var', VarianceThreshold()), 
+                             ('selector', SelectKBest(f_regression, k=no_of_features)),
+                             ('estimator', Ridge())])
+        
+        reg = pipeline.fit(X_train, y_train)  
+        features = reg["selector"].get_feature_names_out(relevant_columns)
+        # each forecast is weighted by the group's relative contribution to national harvested area
+        selected_features.at[season, "features"] = features
+    
+    return selected_features
