@@ -24,9 +24,9 @@ def read_raw_model_data():
     returns:
      - hindcasts: dataframe with daily raw output of seasonal climate models from ECMWF, UKMO, NCEP, and their averaged output MME
     """ 
-    ukmo = pd.read_csv("Data/Raw Hindcasts as CSV/ukmo.csv", dtype={"date":str, "group":int}, parse_dates=["date"])
-    ncep = pd.read_csv("Data/Raw Hindcasts as CSV/ncep.csv", dtype={"date":str, "group":int}, parse_dates=["date"])
-    ecmwf = pd.read_csv("Data/Raw Hindcasts as CSV/ecmwf.csv", dtype={"date":str, "group":int}, parse_dates=["date"])
+    ukmo = pd.read_csv("data/Raw Hindcasts as CSV/ukmo.csv", dtype={"date":str, "group":int}, parse_dates=["date"])
+    ncep = pd.read_csv("data/Raw Hindcasts as CSV/ncep.csv", dtype={"date":str, "group":int}, parse_dates=["date"])
+    ecmwf = pd.read_csv("data/Raw Hindcasts as CSV/ecmwf.csv", dtype={"date":str, "group":int}, parse_dates=["date"])
     df = pd.concat([ukmo, ncep, ecmwf])
     df = df.sort_values(by=["model", "init_month", "ensemble", "group", "year", "month", "date"])
     
@@ -57,7 +57,7 @@ def read_observed_weather():
      - observations: dataframe with daily climate observations of tmean, tmax, tmin, and rain
     """
     weather_station_to_group_id = {"PFUN":1, "LOND":2, "CAMP":3, "PGRO":4}         
-    all_files = glob.glob("Data/Observed Weather/*.csv")
+    all_files = glob.glob("data/Observed Weather/*.csv")
     li = []
     for _, filename in enumerate(all_files):
         observations = pd.read_csv(filename,
@@ -127,6 +127,6 @@ def read_wheat_yield_data():
      - national_yield: dataframe with detrended national wheat yield from 1993 to 2016
      - yield_by_group: dataframe with detrended wheat yield by group from 1993 to 2016
     """
-    national_yield = pd.read_csv("Data/Wheat/ibge_national_yield_detrended.csv")
-    yield_by_group = pd.read_csv("Data/Wheat/yield_by_group_detrended.csv")
+    national_yield = pd.read_csv("data/Wheat/ibge_national_yield_detrended.csv")
+    yield_by_group = pd.read_csv("data/Wheat/yield_by_group_detrended.csv")
     return (national_yield, yield_by_group)
