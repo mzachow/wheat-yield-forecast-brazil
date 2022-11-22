@@ -27,7 +27,7 @@ def adjust_temperature_bias(observed, predicted, correction_method="normal_mappi
     parameters:
      - observed: observed climate data
      - predicted: hindcast data
-     - correction_method: bias-correction method to be applied. Can be 'normal_mapping', 'quantile_mapping', 'gamma_mapping', 'modified_quantile'
+     - correction_method: bias-correction method to be applied. Can be 'normal_mapping', 'basic_quantile', 'gamma_mapping', 'modified_quantile'
     
     returns: 
      - results: bias-adjusted hindcasts as dataframe  
@@ -62,9 +62,11 @@ def adjust_temperature_bias(observed, predicted, correction_method="normal_mappi
         bc_tmean = BiasCorrection(observations_used_as_reference["tmean"], hindcasts_used_as_reference["tmean"], group_content["tmean"])
         bc_tmax = BiasCorrection(observations_used_as_reference["tmax"], hindcasts_used_as_reference["tmax"], group_content["tmax"])
         bc_tmin = BiasCorrection(observations_used_as_reference["tmin"], hindcasts_used_as_reference["tmin"], group_content["tmin"])
+        
         group_content["tmean"] = bc_tmean.correct(method=correction_method)
         group_content["tmax"] = bc_tmax.correct(method=correction_method)
         group_content["tmin"] = bc_tmin.correct(method=correction_method)
+        
         
         li.append(group_content)
         
