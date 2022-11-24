@@ -1,7 +1,7 @@
-data/Raw Hindcasts as CSV/.DS_Store
-data/Raw Hindcasts as CSV/ecmwf.csv
-data/Raw Hindcasts as CSV/ncep.csv
-data/Raw Hindcasts as CSV/ukmo.csv
-data/Raw Hindcasts as CSV/.ipynb_checkpoints/ecmwf-checkpoint.csv
-data/Raw Hindcasts as CSV/.ipynb_checkpoints/ncep-checkpoint.csv
-data/Raw Hindcasts as CSV/.ipynb_checkpoints/ukmo-checkpoint.csv
+data/raw hindcasts/.DS_Store
+data/raw hindcasts/ecmwf.csv
+data/raw hindcasts/ncep.csv
+data/raw hindcasts/ukmo.csv
+data/raw hindcasts/.ipynb_checkpoints/ecmwf-checkpoint.csv
+data/raw hindcasts/.ipynb_checkpoints/ncep-checkpoint.csv
+data/raw hindcasts/.ipynb_checkpoints/ukmo-checkpoint.csv
