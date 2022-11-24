@@ -15,10 +15,6 @@ To reproduce the insights, there are three notebooks.
 2. ``climatology_vs_seasonal_forecasts``: main part of the research with detailed steps and descriptions on how the model was built using wheat and (forecasted and observed) climate data. Here, the preprocessed hindcasts are required.
 3. ``figures_for_manuscript``: design of the figures, based on the results of 2.). Figures from the manuscript are saved in /images.
 
-## Contributing
-
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
 
 ## Acknowledgment
 
