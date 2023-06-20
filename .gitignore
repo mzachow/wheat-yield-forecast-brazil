@@ -1,4 +1,4 @@
-*.pyc
+modules/__pycache__/*.pyc
 data/raw hindcasts/.DS_Store
 data/raw hindcasts/ecmwf.csv
 data/raw hindcasts/ncep.csv
