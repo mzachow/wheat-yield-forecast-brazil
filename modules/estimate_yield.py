@@ -158,6 +158,14 @@ def kfold_cross_validation(data, model="ECMWF", init=8, no_of_features=8):
         
         reg = pipeline.fit(X_train, y_train)  
 
+        #if season in [2002, 2003, 2006, 2010, 2015, 2016]:
+            #coefficients = reg["estimator"].coef_
+            #bias = reg["estimator"].intercept_
+            #features = reg["selector"].get_feature_names_out(relevant_columns)
+            #print(season)
+            #print(features)
+            #print(coefficients)
+        
         X_val = cv_dataset.loc[(cv_dataset["model"] == model)
                                & (cv_dataset["year"] == season), relevant_columns].reset_index(drop=True)
                 

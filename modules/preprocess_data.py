@@ -165,6 +165,7 @@ def prepare_drought_count(df):
         gr.loc[:, 'new_Value'] = temp
        
         a = gr.loc[:,'new_Value'] != 0
+        
         gr.loc[:,'consecutives'] = a.cumsum()-a.cumsum().where(~a).ffill().fillna(0).astype(int)
         li.append(gr)
         
