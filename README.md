@@ -1,6 +1,6 @@
 # wheat-yield-forecast-brazil
 
-wheat-yield-forecast-brazil is a project containing modules and notebooks to reproduce the findings from the paper [Using seasonal climate models to forecast wheat yield in Brazil](https://doi.org/10.1016/j.agrformet.2023.109753). The objective of this research was to forecast trend-corrected wheat yield in Brazil before harvest using forecasted climate features from seasonal climate models. 
+wheat-yield-forecast-brazil is a project containing modules and notebooks to reproduce the findings from the paper [Seasonal climate models for national wheat yield forecasts in Brazil](https://doi.org/10.1016/j.agrformet.2023.109753). The objective of this research was to forecast trend-corrected wheat yield in Brazil before harvest using forecasted climate features from seasonal climate models. 
 
 ## Results
 
